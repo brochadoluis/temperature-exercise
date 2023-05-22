@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package temperature;
+
+option go_package = "github.com/brochadoluis/temperature-exercise/proto";
+
+service Temperature {
+  rpc ListTemperature(ListTemperatureRequest) returns (ListTemperatureResponse) {}
+  rpc SaveTemperature(SaveTemperatureRequest) returns (SaveTemperatureResponse) {}
+}
+
+message ListTemperatureRequest {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+message ListTemperatureResponse {
+  double latitude = 1;
+  double longitude = 2;
+  double temperature = 3;
+  bool alert = 4;
+  bool error = 5;
+}
+
+message SaveTemperatureRequest {
+  double latitude = 1;
+  double longitude = 2;
+  double temperature = 3;
+  bool alert = 4;
+  bool error = 5;
+}
+
+message SaveTemperatureResponse {
+	double latitude = 1;
+	double longitude = 2;
+ 	double temperature = 3;
+ 	bool alert = 4;
+	bool error = 5;
+}

@@ -1,45 +1,110 @@
-# Variables
-API_IMAGE_NAME := my-api-image
-SCRAPPER_IMAGE_NAME := my-scrapper-image
+.PHONY: build run clean proto lint test coverage help
 
-# Build API Docker image
-build-api:# docker build -t $(API_IMAGE_NAME) -f api/Dockerfile .
-	docker-compose build api
-	
-# Enter the API Docker container
-enter-api:
-	docker-compose exec api sh	
+# Define the executable names
+API_EXECUTABLE := api
+SCRAPPER_EXECUTABLE := scrapper
+DATABASE_EXECUTABLE := database
 
-# Build Scrapper Docker image
-build-scrapper:
-	docker build -t $(SCRAPPER_IMAGE_NAME) ./scrapper
+# Define the directories
+CMD_API_DIR := cmd/api
+CMD_SCRAPPER_DIR := cmd/scrapper
+CMD_DATABASE_DIR := cmd/database
+PROTO_DIR := proto
+INTERNAL_API_DIR := internal/api
+INTERNAL_SCRAPPER_DIR := internal/scrapper
+INTERNAL_DATABASE_DIR := internal/database
 
-# Run the gRPC servers
-run-grpc:
-	@echo "Starting gRPC servers..."
-	# Add command to start the gRPC servers here
+# Generate protobuf files
+proto:
+	protoc --go_out=. --go_opt=module=github.com/brochadoluis/temperature-exercise \
+		--go-grpc_out=. --go-grpc_opt=module=github.com/brochadoluis/temperature-exercise \
+		--proto_path=./proto ./proto/temperature.proto
 
-# Start the API service using Docker Compose
+# Default target
+build-all: build-api build-scrapper build-database build-mongodb
+
+# Run all containers target
+run-all:
+	docker-compose up -d
+
+# Run the API component
 run-api:
-	@echo "Starting API service..."
-	docker-compose up --build api
+	docker-compose up api
 
-# Stop and remove the containers
-stop:
-	docker-compose down
+# Run the Scrapper component
+run-scrapper:
+	docker-compose up scrapper
 
-# Build the Docker images and start the services
-start: build-api build-scrapper run-grpc run-api
+# Run the Database component
+run-database:
+	docker-compose up database
 
-# Help command to display available commands
+# Clean up the project
+clean:
+	docker-compose down -v
+	rm -f $(CMD_API_DIR)/$(API_EXECUTABLE)
+	rm -f $(CMD_SCRAPPER_DIR)/$(SCRAPPER_EXECUTABLE)
+	rm -f $(CMD_DATABASE_DIR)/$(DATABASE_EXECUTABLE)
+
+# Run linter
+lint:
+	docker-compose run --rm lint
+
+# Run tests
+test:
+	docker-compose run --rm test
+
+# Run tests and generate coverage report
+coverage:
+	docker-compose run --rm coverage
+
+
+# Build the API container
+build-api:
+	@docker-compose build api
+
+# Build the Scrapper container
+build-scrapper:
+	@docker-compose build scrapper
+
+# Build the Database container
+build-database:
+	@docker-compose build database
+
+# Run the API container
+run-api:
+	@docker-compose up api
+
+# Run the Scrapper container
+run-scrapper:
+	@docker-compose up scrapper
+
+# Run the Database container
+run-database:
+	@docker-compose up database
+
+# Run linter
+lint:
+	docker-compose run --rm temperature-exercise golangci-lint run
+
+# Run tests
+test:
+	docker-compose run --rm temperature-exercise go test -v ./...
+
+# Run tests and generate coverage report
+coverage:
+	docker-compose run --rm temperature-exercise sh -c "go test -v -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html"
+
+# Display help message
 help:
 	@echo "Available commands:"
-	@echo "  build-api        : Build the API Docker image"
-	@echo "  build-scrapper   : Build the Scrapper Docker image"
-	@echo "  run-grpc         : Run the gRPC servers"
-	@echo "  run-api          : Start the API service using Docker Compose"
-	@echo "  stop             : Stop and remove the running containers"
-	@echo "  start            : Build the Docker images and start the gRPC servers and API service"
-	@echo "  help             : Display available commands"
-
-.PHONY: build-api build-scrapper run-grpc run-api stop start help
+	@echo "  all             : Build all containers (default target)"
+	@echo "  clean           : Clean up the project"
+	@echo "  proto           : Generate protobuf files"
+	@echo "  run-api         : Run the API container"
+	@echo "  run-scrapper    : Run the Scrapper container"
+	@echo "  run-database    : Run the Database container"
+	@echo "  lint            : Run linter"
+	@echo "  test            : Run tests"
+	@echo "  coverage        : Run tests and generate coverage report"
+	@echo "  help            : Show this help message"

@@ -1,0 +1,23 @@
+# Use an official Golang runtime as the base image
+FROM golang:1.20-alpine3.18
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the Go module files to the working directory
+COPY go.mod go.sum ./
+
+# Download and install Go module dependencies
+RUN go mod download
+
+# Copy the entire project directory to the working directory
+COPY . .
+
+# Build the Go application
+RUN go build -o api ./cmd/api
+
+# Expose the port on which the application will run
+EXPOSE 8080
+
+# Specify the command to run the application
+CMD ["./api"]
