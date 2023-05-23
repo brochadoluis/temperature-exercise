@@ -21,7 +21,7 @@ proto:
 		--proto_path=./proto ./proto/temperature.proto
 
 # Default target
-build-all: build-api build-scrapper build-database build-mongodb
+build-all: build-api build-scrapper build-database-service
 
 # Run all containers target
 run-all:
@@ -33,11 +33,11 @@ run-api:
 
 # Run the Scrapper component
 run-scrapper:
-	docker-compose up scrapper
+	docker-compose up scrapper-service
 
 # Run the Database component
 run-database:
-	docker-compose up database
+	docker-compose up db-service
 
 # Clean up the project
 clean:
@@ -46,65 +46,25 @@ clean:
 	rm -f $(CMD_SCRAPPER_DIR)/$(SCRAPPER_EXECUTABLE)
 	rm -f $(CMD_DATABASE_DIR)/$(DATABASE_EXECUTABLE)
 
-# Run linter
-lint:
-	docker-compose run --rm lint
-
-# Run tests
-test:
-	docker-compose run --rm test
-
-# Run tests and generate coverage report
-coverage:
-	docker-compose run --rm coverage
-
-
 # Build the API container
 build-api:
 	@docker-compose build api
 
 # Build the Scrapper container
 build-scrapper:
-	@docker-compose build scrapper
+	@docker-compose build scrapper-service
 
 # Build the Database container
-build-database:
-	@docker-compose build database
-
-# Run the API container
-run-api:
-	@docker-compose up api
-
-# Run the Scrapper container
-run-scrapper:
-	@docker-compose up scrapper
-
-# Run the Database container
-run-database:
-	@docker-compose up database
-
-# Run linter
-lint:
-	docker-compose run --rm temperature-exercise golangci-lint run
-
-# Run tests
-test:
-	docker-compose run --rm temperature-exercise go test -v ./...
-
-# Run tests and generate coverage report
-coverage:
-	docker-compose run --rm temperature-exercise sh -c "go test -v -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html"
+build-database-service:
+	@docker-compose build db-service
 
 # Display help message
 help:
 	@echo "Available commands:"
-	@echo "  all             : Build all containers (default target)"
-	@echo "  clean           : Clean up the project"
-	@echo "  proto           : Generate protobuf files"
-	@echo "  run-api         : Run the API container"
-	@echo "  run-scrapper    : Run the Scrapper container"
-	@echo "  run-database    : Run the Database container"
-	@echo "  lint            : Run linter"
-	@echo "  test            : Run tests"
-	@echo "  coverage        : Run tests and generate coverage report"
-	@echo "  help            : Show this help message"
+	@echo "  all             		: Build all containers (default target)"
+	@echo "  clean           		: Clean up the project"
+	@echo "  proto           		: Generate protobuf files"
+	@echo "  run-api         		: Run the API container"
+	@echo "  run-scrapper    		: Run the Scrapper Service container"
+	@echo "  run-database-service   : Run the Database Service container"
+	@echo "  help            		: Show this help message"

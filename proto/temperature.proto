@@ -28,6 +28,7 @@ message SaveTemperatureRequest {
   double temperature = 3;
   bool alert = 4;
   bool error = 5;
+  int32 http_code = 6;
 }
 
 message SaveTemperatureResponse {

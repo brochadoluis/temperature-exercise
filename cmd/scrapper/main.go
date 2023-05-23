@@ -14,7 +14,7 @@ func main() {
 	log := logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{})
 
-	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
+	conn, err := grpc.Dial("server:50053", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to dial server: %v", err)
 	}

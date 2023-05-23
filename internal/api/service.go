@@ -19,17 +19,17 @@ func NewAPIService(client proto.TemperatureClient) *Service {
 	}
 }
 
-func (s *Service) GetTemperature(latitude, longitude string) (float64, error) {
+func (s *Service) GetTemperature(latitude, longitude string) (*proto.ListTemperatureResponse, error) {
 	lat, err := strconv.ParseFloat(latitude, 64)
 	if err != nil {
 		log.Errorf("Failed to convert latitude: %v", err)
-		return 0, err
+		return &proto.ListTemperatureResponse{}, err
 	}
 
 	lng, err := strconv.ParseFloat(longitude, 64)
 	if err != nil {
 		log.Errorf("Failed to convert longitude: %v", err)
-		return 0, err
+		return &proto.ListTemperatureResponse{}, err
 	}
 	// Create a gRPC request
 	req := &proto.ListTemperatureRequest{
@@ -41,11 +41,7 @@ func (s *Service) GetTemperature(latitude, longitude string) (float64, error) {
 	resp, err := s.client.ListTemperature(context.Background(), req)
 	if err != nil {
 		log.Errorf("Failed to call Method: %v", err)
-		return 0, err
+		return &proto.ListTemperatureResponse{}, err
 	}
-
-	// Extract the temperature from the response
-	temperature := resp.Temperature
-
-	return temperature, nil
+	return resp, nil
 }

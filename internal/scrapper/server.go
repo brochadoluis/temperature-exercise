@@ -13,6 +13,24 @@ import (
 	"github.com/brochadoluis/temperature-exercise/proto"
 )
 
+type ForecastResponse struct {
+	Latitude    float64
+	Longitude   float64
+	Temperature float64
+	Alert       bool
+	Error       bool
+}
+
+type Response struct {
+	Latitude       float64 `json:"latitude"`
+	Longitude      float64 `json:"longitude"`
+	CurrentWeather Weather `json:"current_weather"`
+}
+
+type Weather struct {
+	Temperature float64 `json:"temperature"`
+}
+
 type Server struct {
 	proto.UnimplementedTemperatureServer
 	Client *Client
@@ -44,14 +62,10 @@ func (s *Server) ListTemperature(ctx context.Context, req *proto.ListTemperature
 		log.Error(err)
 		return nil, errors.Wrap(err, "failed to make API call")
 	}
+
 	forecast, err := s.parseTemperature(ctx, resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse temperature")
-	}
-
-	err = resp.Body.Close()
-	if err != nil {
-		return nil, err
 	}
 
 	forecast.setAlert(ctx)
@@ -61,12 +75,13 @@ func (s *Server) ListTemperature(ctx context.Context, req *proto.ListTemperature
 		forecast.Longitude,
 		forecast.Temperature)
 
-	saved, err := s.client.SaveTemperature(ctx, &proto.SaveTemperatureRequest{
+	saved, err := s.Client.SaveTemperature(ctx, &proto.SaveTemperatureRequest{
 		Latitude:    forecast.Latitude,
 		Longitude:   forecast.Longitude,
 		Temperature: forecast.Temperature,
 		Alert:       forecast.Alert,
 		Error:       forecast.Error,
+		HttpCode:    int32(resp.StatusCode),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to save temperature")
@@ -107,13 +122,47 @@ func (s *Server) makeAPICall(ctx context.Context, url string) (*http.Response, e
 	return resp, nil
 }
 
-func (s *Server) parseTemperature(ctx context.Context, body io.Reader) (*ForecastResponse, error) {
+func (s *Server) parseResponse(ctx context.Context, data io.ReadCloser) (*Response, error) {
 	log.WithContext(ctx).Info("Parsing response object")
 
-	var forecast ForecastResponse
-	err := json.NewDecoder(body).Decode(&forecast)
+	response := &Response{}
+	err := json.NewDecoder(data).Decode(response)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse JSON response")
+	}
+
+	err = data.Close()
+	if err != nil {
+		// Handle error closing the response body
+		log.WithContext(ctx).Error("Failed to close response body:", err)
+	}
+
+	log.WithContext(ctx).Info("Response object parsed successfully")
+	return response, nil
+}
+
+func (s *Server) parseTemperature(ctx context.Context, data io.ReadCloser) (*ForecastResponse, error) {
+	log.WithContext(ctx).Info("Parsing response object")
+
+	var resp Response
+	err := json.NewDecoder(data).Decode(&resp)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse JSON response")
+	}
+
+	err = data.Close()
+	if err != nil {
+		log.WithContext(ctx).Error("Failed to close response body:", err)
+		return nil, errors.Wrap(err, "failed to close response body")
+	}
+
+	log.WithContext(ctx).Info("Response object parsed successfully")
+	log.WithContext(ctx).Info("Mapping response to forecast object")
+
+	forecast := ForecastResponse{
+		Latitude:    resp.Latitude,
+		Longitude:   resp.Longitude,
+		Temperature: resp.CurrentWeather.Temperature,
 	}
 
 	log.WithContext(ctx).Info("Response object parsed successfully")
@@ -127,6 +176,16 @@ func (f *ForecastResponse) setAlert(ctx context.Context) {
 	f.Alert = f.Temperature < 10 || f.Temperature > 40
 
 	log.WithContext(ctx).Infof("Alert set to: %v", f.Alert)
+}
+
+func (f *ForecastResponse) setError(ctx context.Context, statusCode uint32) {
+	log.WithContext(ctx).Infof("Setting error for temperature: %f", f.Temperature)
+
+	if statusCode != http.StatusOK {
+		f.Error = true
+	}
+
+	log.WithContext(ctx).Infof("Error set to: %v", f.Error)
 }
 
 func toListTemperatureResponse(s *proto.SaveTemperatureResponse) *proto.ListTemperatureResponse {

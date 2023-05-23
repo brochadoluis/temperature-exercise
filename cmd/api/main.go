@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	scrapperConn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	scrapperConn, err := grpc.Dial("scrapper:50051", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to connect to the Scrapper service: %v", err)
 	}
@@ -31,14 +31,20 @@ func main() {
 		latitude := c.Query("latitude")
 		longitude := c.Query("longitude")
 
-		temperature, err := apiService.GetTemperature(latitude, longitude)
+		resp, err := apiService.GetTemperature(latitude, longitude)
 		if err != nil {
 			logger.Errorf("Failed to get temperature: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get temperature"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"temperature": temperature})
+		c.JSON(http.StatusOK, gin.H{
+			"Latitude":    resp.Latitude,
+			"Longitude":   resp.Longitude,
+			"Temperature": resp.Temperature,
+			"Alert":       resp.Alert,
+			"Error":       resp.Error,
+		})
 	})
 
 	// Start the HTTP server

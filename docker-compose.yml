@@ -1,39 +1,44 @@
 version: '3'
 services:
     api:
+        container_name: api
         build:
             dockerfile: Dockerfile.api
         ports:
             - "8080:8080"
         depends_on:
-            - scrapper
+            - scrapper-service
         networks:
             - mynetwork
 
-    scrapper:
+    scrapper-service:
+        container_name: scrapper
         build:
             dockerfile: Dockerfile.scrapper
         ports:
             - "50051:50051"
+        depends_on:
+            - db-service
+        networks:
+            - mynetwork
+
+    db-service:
+        container_name: server
+        build:
+            dockerfile: Dockerfile.database
+        ports:
+            - "50053:50053"
         depends_on:
             - database
         networks:
             - mynetwork
 
     database:
-        build:
-            dockerfile: Dockerfile.database
-        ports:
-            - "50052:50052"
-        depends_on:
-            - mongodb
-        networks:
-            - mynetwork
-
-    mongodb:
         image: mongo:latest
+        container_name: database
+        restart: always
         ports:
-            - "27018:27017"
+            - "27017:27017"
         volumes:
             - mongodb_data:/data/db
         networks:
@@ -41,6 +46,7 @@ services:
 
 networks:
     mynetwork:
+        driver: bridge
 
 volumes:
     mongodb_data:

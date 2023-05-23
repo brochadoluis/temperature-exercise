@@ -18,7 +18,7 @@ COPY . .
 RUN go build -o database ./cmd/database
 
 # Expose the port on which the application will listen (if needed)
-EXPOSE 50052
+EXPOSE 50053
 
 # Set the entrypoint command to run the Go application
 CMD ["./database"]

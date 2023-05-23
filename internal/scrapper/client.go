@@ -3,16 +3,10 @@ package scrapper
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/brochadoluis/temperature-exercise/proto"
 )
-
-type ForecastResponse struct {
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
-	Temperature float64 `json:"temperature"`
-	Alert       bool    `json:"alert"`
-	Error       bool    `json:"error"`
-}
 
 type Client struct {
 	client proto.TemperatureClient
@@ -29,8 +23,18 @@ func (c *Client) mustEmbedUnimplementedTemperatureServer() {
 }
 
 func (c *Client) SaveTemperature(ctx context.Context, req *proto.SaveTemperatureRequest) (*proto.SaveTemperatureResponse, error) {
-	// Placeholder response
-	response := &proto.SaveTemperatureResponse{}
+	// Initialize a logger
+	log := logrus.WithContext(ctx).WithField("method", "SaveTemperature")
 
-	return response, nil
+	log.Infof("Sending SaveTemperature request: %v", req)
+
+	resp, err := c.client.SaveTemperature(ctx, req)
+	if err != nil {
+		log.Errorf("SaveTemperature request failed: %v", err)
+		return nil, err
+	}
+
+	log.Infof("SaveTemperature response received: %v", resp)
+
+	return resp, nil
 }
